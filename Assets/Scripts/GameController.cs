@@ -1,11 +1,12 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.UI;
 using System.Linq;
 using System;
 
-public class GameController : MonoBehaviour {
+public class GameController : NetworkBehaviour {
 
     public int shipsPerPlayer = 2;
     public GameObject shipPrefab;
@@ -45,15 +46,17 @@ public class GameController : MonoBehaviour {
 
     void Start ()
     {
-        StartGame();
+        turnQueue = new Queue<Ship>();
+
+        if (isServer)
+            StartGame();
     }
 
     private void StartGame ()
     {
-        turnQueue = new Queue<Ship>();
         List<Ship> allShips = new List<Ship>();
 
-        /// Test game setup! 
+        // Test game setup! 
         for (int p = 0; p < 2; p++)
         {
             Ship[] ships = new Ship[shipsPerPlayer];
@@ -61,8 +64,9 @@ public class GameController : MonoBehaviour {
             for (int s = 0; s < shipsPerPlayer; s++)
             {
                 ships[s] = Instantiate(shipPrefab).GetComponent<Ship>();
-
                 ships[s].Setup(GetRandomShipType(), p, playerColors[p]);
+
+                // NetworkServer.SpawnWithClientAuthority(ships[s])
 
                 allShips.Add(ships[s]);
             }
@@ -81,6 +85,14 @@ public class GameController : MonoBehaviour {
 
         // start first turn
         NextTurn(true);
+    }
+
+    [ClientRpc]
+    private void RpcSetupShip(GameObject shipgo, int type, int owner)
+    {
+        Ship ship = shipgo.GetComponent<Ship>();
+
+        ship.Setup(shipTypes[type], owner, playerColors[owner]);
     }
 
     private ShipType GetRandomShipType()
