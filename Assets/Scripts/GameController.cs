@@ -11,6 +11,7 @@ public class GameController : NetworkBehaviour {
     public int shipsPerPlayer = 2;
     public GameObject shipPrefab;
     public ShipType[] shipTypes;
+    public ShipType GetShipType(int i) { return shipTypes[i]; }
     public Color[] playerColors;
     public Button nextTurnButton;
     public Text nextTurnButtonText;
@@ -84,7 +85,7 @@ public class GameController : NetworkBehaviour {
 
 
         // start first turn
-        NextTurn(true);
+        //NextTurn(true);
     }
 
     [ClientRpc]
@@ -92,11 +93,19 @@ public class GameController : NetworkBehaviour {
     {
         Ship ship = shipgo.GetComponent<Ship>();
 
-        ship.Setup(shipTypes[type], owner, playerColors[owner]);
+        ship.Setup(type, owner, playerColors[owner]);
         MapController.instance.GetTile(new Coord(x, y)).MoveShipHere(ship, true);
         ship.TurnInstant(f);
 
         MapController.instance.RegisterShip(ship);
+
+        if (isServer)
+        {
+            if (MapController.instance.ShipCount() == 2 * shipsPerPlayer)
+            {
+                NextTurn(true);
+            }
+        }
     }
 
     private ShipType GetRandomShipType()

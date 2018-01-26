@@ -24,7 +24,8 @@ public class Ship : NetworkBehaviour {
 
     public float facingAngle { get { return facing * 45f; } }
 
-    public ShipType type { get; protected set; }
+    public int typeIndex { get; protected set; }
+    public ShipType type { get { return GameController.instance.GetShipType(typeIndex); } }
     public int ownerIndex { get; private set; }
     private Attack[] attacks;
 
@@ -45,11 +46,18 @@ public class Ship : NetworkBehaviour {
     void Start () {
         _pos = new Coord((int)transform.position.x, (int)transform.position.z);
         TurnInstant(AngleToFace(transform.eulerAngles.y));
+
+        if (type == null)
+        {
+            // Something might be wrong
+            // Ask server about initial state
+            CmdUpdateState();
+        }
     }
 
-    public void Setup (ShipType type, int ownerIndex, Color playerColor)
+    public void Setup (int typeId, int ownerIndex, Color playerColor)
     {
-        this.type = type;
+        this.typeIndex = typeId;
         this.ownerIndex = ownerIndex;
 
         GameObject modelgo = Instantiate(type.model, transform.Find("Model").transform);
@@ -283,5 +291,18 @@ public class Ship : NetworkBehaviour {
         }
 
         Destroy(gameObject);
+    }
+
+    [Command]
+    private void CmdUpdateState()
+    {
+        RpcUpdateState(typeIndex, ownerIndex, pos.x, pos.y, facing);
+    }
+
+    [ClientRpc]
+    private void RpcUpdateState(int typeId, int owner, int x, int y, int f)
+    {
+        Setup(typeId, owner, GameController.instance.playerColors[owner]);
+        MoveInstant(new Coord(x, y), f);
     }
 }

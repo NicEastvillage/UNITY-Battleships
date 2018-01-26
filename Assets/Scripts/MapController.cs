@@ -129,6 +129,11 @@ public class MapController : MonoBehaviour {
         allShips.Add(ship);
     }
 
+    public int ShipCount()
+    {
+        return allShips.Count;
+    }
+
     public List<Ship> GetAllShips()
     {
         return new List<Ship>(allShips);
