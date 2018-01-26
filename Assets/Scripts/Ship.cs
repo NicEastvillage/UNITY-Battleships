@@ -1,9 +1,10 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Networking;
 using System;
 
-public class Ship : MonoBehaviour {
+public class Ship : NetworkBehaviour {
 
     private Coord _pos;
     public Coord pos
