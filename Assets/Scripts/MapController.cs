@@ -4,6 +4,18 @@ using UnityEngine;
 
 public class MapController : MonoBehaviour {
 
+    public struct MapPosition
+    {
+        public Coord pos;
+        public int facing;
+
+        public MapPosition(Coord p, int f)
+        {
+            pos = p;
+            facing = f;
+        }
+    }
+
     [SerializeField]
     private int _width = 16;
     public int width { get { return _width; } }
@@ -15,7 +27,7 @@ public class MapController : MonoBehaviour {
     public int startDistance { get { return _startDistance; } }
 
     private Tile[,] grid;
-    private List<Ship> allShips;
+    private List<Ship> allShips = new List<Ship>();
 
     public static MapController instance;
 
@@ -47,8 +59,6 @@ public class MapController : MonoBehaviour {
                 grid[x, y] = new Tile(new Coord(x, y));
             }
         }
-
-        allShips = new List<Ship>();
     }
 
     public Tile GetTile(Coord pos)
@@ -64,6 +74,29 @@ public class MapController : MonoBehaviour {
     public bool IsWithinMap(Coord pos)
     {
         return pos.x >= 0 && pos.x < width && pos.y >= 0 && pos.y < height;
+    }
+
+    public MapPosition[] GetStartPositions(int shipsPerPlayer)
+    {
+        int players = 2;
+
+        List<MapPosition> starts = new List<MapPosition>();
+
+        for (int ownerId = 0; ownerId < players; ownerId++)
+        {
+            int distFromBorder = (height - startDistance) / 2;
+            int y = ownerId == 0 ? distFromBorder : height - 1 - distFromBorder;
+            int facing = ownerId == 0 ? 0 : 4;
+
+            for (int i = 0; i < shipsPerPlayer; i++)
+            {
+                int x = width / 2 - shipsPerPlayer + 2 * i + 1;
+
+                starts.Add(new MapPosition(new Coord(x, y), facing));
+            }
+        }
+
+        return starts.ToArray();
     }
 
     public void PlaceShipsAtStartPositions(int ownerId, Ship[] ships)

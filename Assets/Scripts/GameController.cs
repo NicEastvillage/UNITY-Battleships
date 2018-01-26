@@ -57,21 +57,21 @@ public class GameController : NetworkBehaviour {
         List<Ship> allShips = new List<Ship>();
 
         // Test game setup! 
+        MapController.MapPosition[] startPositions = MapController.instance.GetStartPositions(shipsPerPlayer);
         for (int p = 0; p < 2; p++)
         {
-            Ship[] ships = new Ship[shipsPerPlayer];
-
             for (int s = 0; s < shipsPerPlayer; s++)
             {
-                ships[s] = Instantiate(shipPrefab).GetComponent<Ship>();
-                ships[s].Setup(GetRandomShipType(), p, playerColors[p]);
+                Ship ship = Instantiate(shipPrefab).GetComponent<Ship>();
+                NetworkServer.Spawn(ship.gameObject);
 
-                // NetworkServer.SpawnWithClientAuthority(ships[s])
+                int type = UnityEngine.Random.Range(0, shipTypes.Length);
+                MapController.MapPosition startPos = startPositions[p * shipsPerPlayer + s];
 
-                allShips.Add(ships[s]);
+                RpcSetupShip(ship.gameObject, type, p, startPos.pos.x, startPos.pos.y, startPos.facing);
+
+                allShips.Add(ship);
             }
-
-            MapController.instance.PlaceShipsAtStartPositions(p, ships);
         }
 
         // random order
@@ -88,11 +88,15 @@ public class GameController : NetworkBehaviour {
     }
 
     [ClientRpc]
-    private void RpcSetupShip(GameObject shipgo, int type, int owner)
+    private void RpcSetupShip(GameObject shipgo, int type, int owner, int x, int y, int f)
     {
         Ship ship = shipgo.GetComponent<Ship>();
 
         ship.Setup(shipTypes[type], owner, playerColors[owner]);
+        MapController.instance.GetTile(new Coord(x, y)).MoveShipHere(ship, true);
+        ship.TurnInstant(f);
+
+        MapController.instance.RegisterShip(ship);
     }
 
     private ShipType GetRandomShipType()
